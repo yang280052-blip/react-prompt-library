@@ -56,7 +56,7 @@ const ShowcaseView = () => {
             marginBottom: '16px'
           }}
         >
-          <Sparkles size={14} /> 优秀案例库
+          <Sparkles size={14} /> 案例库
         </motion.div>
         <h1 style={{ fontSize: '4.5rem', lineHeight: '0.95', marginBottom: '24px' }}>
           提示词 <br />
