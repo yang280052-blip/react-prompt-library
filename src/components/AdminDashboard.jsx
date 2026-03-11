@@ -16,7 +16,9 @@ import {
   ShieldCheck,
   ChevronRight,
   Save,
-  X
+  X,
+  Image as ImageIcon,
+  Upload
 } from 'lucide-react';
 
 const AdminDashboard = ({ session }) => {
@@ -35,10 +37,19 @@ const AdminDashboard = ({ session }) => {
   const [category, setCategory] = useState('');
   const [isPublic, setIsPublic] = useState(true);
 
+  // Showcase States
+  const [showcases, setShowcases] = useState([]);
+  const [showcaseTitle, setShowcaseTitle] = useState('');
+  const [showcasePrompt, setShowcasePrompt] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [editingShowcaseId, setEditingShowcaseId] = useState(null);
+
   useEffect(() => {
     if (session) {
       checkAdminStatus();
       fetchUsers();
+      fetchShowcases();
     }
   }, [session]);
 
@@ -153,6 +164,106 @@ const AdminDashboard = ({ session }) => {
       alert('删除失败: ' + error.message);
     }
   };
+  
+  const fetchShowcases = async (adminFlag = isAdmin) => {
+    try {
+      let query = supabase
+        .from('showcases')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (!adminFlag) {
+        query = query.eq('user_id', session.user.id);
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      setShowcases(data || []);
+    } catch (error) {
+      console.error('Error fetching showcases:', error.message);
+    }
+  };
+
+  const saveShowcase = async (e) => {
+    e.preventDefault();
+    if (!imageFile && !editingShowcaseId) {
+      alert('请选择一张图片上传');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      let imageUrl = '';
+      
+      // Handle image upload if a new file is selected
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${session.user.id}/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('showcase-images')
+          .upload(filePath, imageFile);
+          
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('showcase-images')
+          .getPublicUrl(filePath);
+          
+        imageUrl = publicUrl;
+      }
+
+      const showcaseData = { 
+        title: showcaseTitle, 
+        prompt_content: showcasePrompt, 
+        user_id: session.user.id 
+      };
+      
+      if (imageUrl) showcaseData.image_url = imageUrl;
+
+      if (editingShowcaseId) {
+        const { error } = await supabase.from('showcases').update(showcaseData).eq('id', editingShowcaseId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('showcases').insert([showcaseData]);
+        if (error) throw error;
+      }
+
+      setShowcaseTitle('');
+      setShowcasePrompt('');
+      setImageFile(null);
+      setEditingShowcaseId(null);
+      setShowForm(false);
+      fetchShowcases();
+      alert('案例保存成功！');
+    } catch (error) {
+      alert('保存失败: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const deleteShowcase = async (id, ownerId) => {
+    if (!isAdmin && ownerId !== session.user.id) return;
+    if (!window.confirm('确定要删除这个案例吗？')) return;
+    
+    try {
+      const { error } = await supabase.from('showcases').delete().eq('id', id);
+      if (error) throw error;
+      fetchShowcases();
+    } catch (error) {
+      alert('删除失败: ' + error.message);
+    }
+  };
+
+  const editShowcase = (s) => {
+    setEditingShowcaseId(s.id);
+    setShowcaseTitle(s.title);
+    setShowcasePrompt(s.prompt_content);
+    setActiveTab('showcases');
+    setShowForm(true);
+  };
 
   if (!session) return <Auth />;
 
@@ -206,11 +317,18 @@ const AdminDashboard = ({ session }) => {
               <BarChart3 size={18} /> 数据概览
             </button>
           )}
+          <button 
+            onClick={() => setActiveTab('showcases')}
+            className={activeTab === 'showcases' ? 'btn-cyber-primary' : 'btn-cyber-outline'}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}
+          >
+            <ImageIcon size={18} /> 案例管理
+          </button>
         </div>
         
-        {!showForm && activeTab === 'prompts' && (
+        {!showForm && (activeTab === 'prompts' || activeTab === 'showcases') && (
           <button onClick={() => setShowForm(true)} className="btn-cyber-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Plus size={20} /> 新增提示词
+            <Plus size={20} /> {activeTab === 'prompts' ? '新增提示词' : '新增案例'}
           </button>
         )}
       </div>
@@ -226,48 +344,113 @@ const AdminDashboard = ({ session }) => {
             style={{ padding: '32px', marginBottom: '40px' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-              <h3 style={{ fontSize: '1.5rem' }}>{editingId ? '编辑提示词' : '创建新提示词'}</h3>
+              <h3 style={{ fontSize: '1.5rem' }}>
+                {activeTab === 'prompts' ? (editingId ? '编辑提示词' : '创建新提示词') : (editingShowcaseId ? '编辑案例' : '上传新案例')}
+              </h3>
               <button onClick={resetForm} style={{ background: 'none', color: 'var(--text-muted)' }}><X size={24} /></button>
             </div>
             
-            <form onSubmit={savePrompt} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase' }}>标题</label>
-                  <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="输入引人注目的标题..." />
+            {activeTab === 'prompts' ? (
+              <form onSubmit={savePrompt} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase' }}>标题</label>
+                    <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="输入引人注目的标题..." />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase' }}>分类</label>
+                    <input type="text" value={category} onChange={(e) => setCategory(e.target.value)} required placeholder="例如：绘画, 写作, 编程..." />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase' }}>简短描述</label>
+                    <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="一句话介绍作用..." rows={2} style={{ resize: 'none' }} />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px' }}>
+                    <input 
+                      type="checkbox" id="public-check" checked={isPublic} 
+                      onChange={(e) => setIsPublic(e.target.checked)} 
+                      style={{ width: '20px', height: '20px' }}
+                    />
+                    <label htmlFor="public-check" style={{ cursor: 'pointer', fontSize: '0.9rem' }}>
+                      {isPublic ? <span style={{ color: 'var(--accent-cyan)', fontWeight: 'bold' }}>🌐 公开分享到社区</span> : '🔒 设为私有'}
+                    </label>
+                  </div>
                 </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase' }}>分类</label>
-                  <input type="text" value={category} onChange={(e) => setCategory(e.target.value)} required placeholder="例如：绘画, 写作, 编程..." />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase' }}>简短描述</label>
-                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="一句话介绍作用..." rows={2} style={{ resize: 'none' }} />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px' }}>
-                  <input 
-                    type="checkbox" id="public-check" checked={isPublic} 
-                    onChange={(e) => setIsPublic(e.target.checked)} 
-                    style={{ width: '20px', height: '20px' }}
-                  />
-                  <label htmlFor="public-check" style={{ cursor: 'pointer', fontSize: '0.9rem' }}>
-                    {isPublic ? <span style={{ color: 'var(--accent-cyan)', fontWeight: 'bold' }}>🌐 公开分享到社区</span> : '🔒 设为私有'}
-                  </label>
-                </div>
-              </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase' }}>提示词正文</label>
-                <textarea 
-                  value={content} onChange={(e) => setContent(e.target.value)} 
-                  required placeholder="在此输入完整的提示词指令..." 
-                  style={{ flex: 1, minHeight: '200px', fontFamily: 'monospace' }} 
-                />
-                <button type="submit" className="btn-cyber-primary" style={{ marginTop: '24px', height: '54px', fontSize: '1rem' }}>
-                  {editingId ? '更新内容' : '立即发布'}
-                </button>
-              </div>
-            </form>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase' }}>提示词正文</label>
+                  <textarea 
+                    value={content} onChange={(e) => setContent(e.target.value)} 
+                    required placeholder="在此输入完整的提示词指令..." 
+                    style={{ flex: 1, minHeight: '200px', fontFamily: 'monospace' }} 
+                  />
+                  <button type="submit" className="btn-cyber-primary" style={{ marginTop: '24px', height: '54px', fontSize: '1rem' }}>
+                    {editingId ? '更新内容' : '立即发布'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={saveShowcase} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase' }}>案例标题</label>
+                    <input 
+                      type="text" 
+                      value={showcaseTitle} 
+                      onChange={(e) => setShowcaseTitle(e.target.value)} 
+                      required 
+                      placeholder="例如：赛博朋克风格城市..." 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase' }}>上传效果图</label>
+                    <div style={{ 
+                      border: '2px dashed var(--border-ultra-thin)', 
+                      borderRadius: '12px', 
+                      padding: '40px', 
+                      textAlign: 'center',
+                      background: 'rgba(0,0,0,0.2)',
+                      cursor: 'pointer',
+                      position: 'relative'
+                    }} onClick={() => document.getElementById('image-upload').click()}>
+                      <Upload size={32} style={{ color: 'var(--accent-magenta)', marginBottom: '12px' }} />
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                        {imageFile ? <span style={{ color: 'var(--accent-cyan)' }}>已选择: {imageFile.name}</span> : '点击或拖拽图片到此处上传'}
+                      </p>
+                      <input 
+                        id="image-upload" 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={(e) => setImageFile(e.target.files[0])} 
+                        style={{ display: 'none' }} 
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase' }}>对应的提示词</label>
+                  <textarea 
+                    value={showcasePrompt} 
+                    onChange={(e) => setShowcasePrompt(e.target.value)} 
+                    required 
+                    placeholder="在此输入生成该图片所用的提示词..." 
+                    style={{ flex: 1, minHeight: '200px', fontFamily: 'monospace' }} 
+                  />
+                  <button 
+                    type="submit" 
+                    disabled={uploading}
+                    className="btn-cyber-primary" 
+                    style={{ 
+                      marginTop: '24px', height: '54px', fontSize: '1rem',
+                      background: 'linear-gradient(135deg, var(--accent-magenta), #6366f1)',
+                      color: '#fff'
+                    }}
+                  >
+                    {uploading ? '正在极速同步...' : (editingShowcaseId ? '保存更改' : '发布案例')}
+                  </button>
+                </div>
+              </form>
+            )}
           </motion.div>
         )}
 
@@ -367,6 +550,46 @@ const AdminDashboard = ({ session }) => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </motion.div>
+        )}
+        {/* Showcase Tab */}
+        {activeTab === 'showcases' && (
+          <motion.div 
+            key="showcases-tab"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+          >
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '20px' }}>
+              {showcases.length === 0 ? (
+                <div className="cyber-card" style={{ textAlign: 'center', padding: '80px', color: 'var(--text-muted)', gridColumn: '1/-1' }}>您的案例库暂时为空</div>
+              ) : (
+                showcases.map((s) => (
+                  <motion.div 
+                    layout
+                    key={s.id} 
+                    className="cyber-card" 
+                    style={{ padding: 0, display: 'flex', overflow: 'hidden' }}
+                  >
+                    <div style={{ width: '120px', height: '120px', flexShrink: 0 }}>
+                      <img src={s.image_url} alt={s.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <div style={{ padding: '20px', flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ overflow: 'hidden' }}>
+                        <h4 style={{ fontSize: '1.1rem', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</h4>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {s.prompt_content}
+                        </p>
+                      </div>
+                      <div style={{ display: 'flex', gap: '12px', marginLeft: '20px' }}>
+                        <button onClick={() => editShowcase(s)} style={{ background: 'none', color: 'var(--text-main)' }}><Edit3 size={18} /></button>
+                        <button onClick={() => deleteShowcase(s.id, s.user_id)} style={{ background: 'none', color: '#ef4444' }}><Trash2 size={18} /></button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
             </div>
           </motion.div>
         )}
