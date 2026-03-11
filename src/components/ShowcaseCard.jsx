@@ -1,16 +1,31 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Copy, Check, ExternalLink, X, Image as ImageIcon } from 'lucide-react';
+import { Copy, Check, ExternalLink, X, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ShowcaseCard = ({ showcase, index }) => {
   const [copied, setCopied] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [currentIdx, setCurrentIdx] = useState(0);
+
+  const images = showcase.images && showcase.images.length > 0 
+    ? showcase.images 
+    : [{ url: showcase.image_url, caption: '' }];
 
   const handleCopy = (e) => {
     e.stopPropagation();
     navigator.clipboard.writeText(showcase.prompt_content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const nextImage = (e) => {
+    e.stopPropagation();
+    setCurrentIdx((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = (e) => {
+    e.stopPropagation();
+    setCurrentIdx((prev) => (prev - 1 + images.length) % images.length);
   };
 
   return (
@@ -40,7 +55,7 @@ const ShowcaseCard = ({ showcase, index }) => {
           background: 'rgba(0,0,0,0.4)'
         }}>
           <img 
-            src={showcase.image_url} 
+            src={images[0].url} 
             alt={showcase.title}
             style={{ 
               width: '100%', 
@@ -51,6 +66,15 @@ const ShowcaseCard = ({ showcase, index }) => {
             onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
             onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
           />
+          {images.length > 1 && (
+            <div style={{ 
+              position: 'absolute', top: '12px', right: '12px',
+              padding: '4px 8px', borderRadius: '4px', background: 'rgba(0,0,0,0.6)',
+              color: '#fff', fontSize: '0.7rem', fontWeight: 'bold'
+            }}>
+              1 / {images.length}
+            </div>
+          )}
           <div style={{ 
             position: 'absolute', 
             bottom: 0, left: 0, right: 0,
@@ -126,13 +150,46 @@ const ShowcaseCard = ({ showcase, index }) => {
                 <X size={20} />
               </button>
 
-              {/* Left Column: Image */}
-              <div style={{ height: '100%', background: '#000', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-                <img 
-                  src={showcase.image_url} 
-                  alt={showcase.title}
-                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                />
+              {/* Left Column: Image & Carousel */}
+              <div style={{ height: '100%', background: '#000', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', position: 'relative' }}>
+                  <img 
+                    src={images[currentIdx].url} 
+                    alt={showcase.title}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                  />
+                  
+                  {images.length > 1 && (
+                    <>
+                      <button 
+                        onClick={prevImage}
+                        style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: '#fff', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                      >
+                        <ChevronLeft size={24} />
+                      </button>
+                      <button 
+                        onClick={nextImage}
+                        style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: '#fff', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                      >
+                        <ChevronRight size={24} />
+                      </button>
+                    </>
+                  )}
+                </div>
+                
+                {/* Caption Bar */}
+                <div style={{ padding: '16px 24px', background: 'rgba(255,255,255,0.05)', borderTop: '1px solid var(--border-ultra-thin)' }}>
+                  <p style={{ color: 'var(--text-main)', fontSize: '0.95rem', margin: 0, textAlign: 'center' }}>
+                    {images[currentIdx].caption || "暂无注释"}
+                  </p>
+                  {images.length > 1 && (
+                    <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center', gap: '6px' }}>
+                      {images.map((_, i) => (
+                        <div key={i} style={{ width: '6px', height: '6px', borderRadius: '50%', background: i === currentIdx ? 'var(--accent-cyan)' : 'rgba(255,255,255,0.2)' }}></div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Right Column: Prompt Info */}
