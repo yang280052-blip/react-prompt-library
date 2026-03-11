@@ -228,7 +228,6 @@ const AdminDashboard = ({ session }) => {
       const showcaseData = { 
         title: showcaseTitle, 
         prompt_content: showcasePrompt, 
-        user_id: session.user.id,
         images: finalImages,
         image_url: finalImages.length > 0 ? finalImages[0].url : '' // Compatibility for old code
       };
@@ -237,6 +236,7 @@ const AdminDashboard = ({ session }) => {
         const { error } = await supabase.from('showcases').update(showcaseData).eq('id', editingShowcaseId);
         if (error) throw error;
       } else {
+        showcaseData.user_id = session.user.id;
         const { error } = await supabase.from('showcases').insert([showcaseData]);
         if (error) throw error;
       }
