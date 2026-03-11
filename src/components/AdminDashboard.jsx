@@ -41,7 +41,7 @@ const AdminDashboard = ({ session }) => {
   const [showcases, setShowcases] = useState([]);
   const [showcaseTitle, setShowcaseTitle] = useState('');
   const [showcasePrompt, setShowcasePrompt] = useState('');
-  const [imageFile, setImageFile] = useState(null);
+  const [imageUploads, setImageUploads] = useState([]); // [{ file: File | null, url: string, caption: string, id: string }]
   const [uploading, setUploading] = useState(false);
   const [editingShowcaseId, setEditingShowcaseId] = useState(null);
 
@@ -119,6 +119,11 @@ const AdminDashboard = ({ session }) => {
     setContent('');
     setCategory('');
     setIsPublic(true);
+    
+    setShowcaseTitle('');
+    setShowcasePrompt('');
+    setImageUploads([]);
+    setEditingShowcaseId(null);
     setShowForm(false);
   };
 
@@ -186,42 +191,48 @@ const AdminDashboard = ({ session }) => {
 
   const saveShowcase = async (e) => {
     e.preventDefault();
-    if (!imageFile && !editingShowcaseId) {
-      alert('请选择一张图片上传');
+    if (imageUploads.length === 0 && !editingShowcaseId) {
+      alert('请选择至少一张图片上传');
       return;
     }
 
     setUploading(true);
     try {
-      let imageUrl = '';
+      const finalImages = [];
       
-      // Handle image upload if a new file is selected
-      if (imageFile) {
-        const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `${session.user.id}/${fileName}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('showcase-images')
-          .upload(filePath, imageFile);
+      // Handle each image in the uploads array
+      for (const item of imageUploads) {
+        if (item.file) {
+          // It's a new file to upload
+          const fileExt = item.file.name.split('.').pop();
+          const fileName = `${Math.random()}.${fileExt}`;
+          const filePath = `${session.user.id}/${fileName}`;
           
-        if (uploadError) throw uploadError;
-        
-        const { data: { publicUrl } } = supabase.storage
-          .from('showcase-images')
-          .getPublicUrl(filePath);
+          const { error: uploadError } = await supabase.storage
+            .from('showcase-images')
+            .upload(filePath, item.file);
+            
+          if (uploadError) throw uploadError;
           
-        imageUrl = publicUrl;
+          const { data: { publicUrl } } = supabase.storage
+            .from('showcase-images')
+            .getPublicUrl(filePath);
+            
+          finalImages.push({ url: publicUrl, caption: item.caption });
+        } else if (item.url) {
+          // It's an existing image (editing mode)
+          finalImages.push({ url: item.url, caption: item.caption });
+        }
       }
 
       const showcaseData = { 
         title: showcaseTitle, 
         prompt_content: showcasePrompt, 
-        user_id: session.user.id 
+        user_id: session.user.id,
+        images: finalImages,
+        image_url: finalImages.length > 0 ? finalImages[0].url : '' // Compatibility for old code
       };
       
-      if (imageUrl) showcaseData.image_url = imageUrl;
-
       if (editingShowcaseId) {
         const { error } = await supabase.from('showcases').update(showcaseData).eq('id', editingShowcaseId);
         if (error) throw error;
@@ -230,11 +241,7 @@ const AdminDashboard = ({ session }) => {
         if (error) throw error;
       }
 
-      setShowcaseTitle('');
-      setShowcasePrompt('');
-      setImageFile(null);
-      setEditingShowcaseId(null);
-      setShowForm(false);
+      resetForm();
       fetchShowcases();
       alert('案例保存成功！');
     } catch (error) {
@@ -261,8 +268,43 @@ const AdminDashboard = ({ session }) => {
     setEditingShowcaseId(s.id);
     setShowcaseTitle(s.title);
     setShowcasePrompt(s.prompt_content);
+    
+    // Load existing images
+    const existingImages = s.images ? [...s.images] : [];
+    if (existingImages.length === 0 && s.image_url) {
+      existingImages.push({ url: s.image_url, caption: '' });
+    }
+    
+    setImageUploads(existingImages.map((img, idx) => ({
+      id: `existing-${idx}`,
+      url: img.url,
+      caption: img.caption || '',
+      file: null
+    })));
+    
     setActiveTab('showcases');
     setShowForm(true);
+    // Smooth scroll to form
+    window.scrollTo({ top: 300, behavior: 'smooth' });
+  };
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    const newUploads = files.map(file => ({
+      id: Math.random().toString(36).substr(2, 9),
+      file,
+      url: URL.createObjectURL(file),
+      caption: ''
+    }));
+    setImageUploads(prev => [...prev, ...newUploads]);
+  };
+
+  const removeImage = (id) => {
+    setImageUploads(prev => prev.filter(item => item.id !== id));
+  };
+
+  const updateCaption = (id, caption) => {
+    setImageUploads(prev => prev.map(item => item.id === id ? { ...item, caption } : item));
   };
 
   if (!session) return <Auth />;
@@ -322,13 +364,13 @@ const AdminDashboard = ({ session }) => {
             className={activeTab === 'showcases' ? 'btn-cyber-primary' : 'btn-cyber-outline'}
             style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}
           >
-            <ImageIcon size={18} /> 案例管理
+            <ImageIcon size={18} /> 案例库管理
           </button>
         </div>
         
         {!showForm && (activeTab === 'prompts' || activeTab === 'showcases') && (
           <button onClick={() => setShowForm(true)} className="btn-cyber-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Plus size={20} /> {activeTab === 'prompts' ? '新增提示词' : '新增案例'}
+            <Plus size={20} /> {activeTab === 'prompts' ? '新增提示词' : '发布新案例'}
           </button>
         )}
       </div>
@@ -345,7 +387,7 @@ const AdminDashboard = ({ session }) => {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
               <h3 style={{ fontSize: '1.5rem' }}>
-                {activeTab === 'prompts' ? (editingId ? '编辑提示词' : '创建新提示词') : (editingShowcaseId ? '编辑案例' : '上传新案例')}
+                {activeTab === 'prompts' ? (editingId ? '编辑提示词' : '发布新提示词') : (editingShowcaseId ? '编辑案例库' : '发布新案例库项目')}
               </h3>
               <button onClick={resetForm} style={{ background: 'none', color: 'var(--text-muted)' }}><X size={24} /></button>
             </div>
@@ -403,27 +445,43 @@ const AdminDashboard = ({ session }) => {
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase' }}>上传效果图</label>
-                    <div style={{ 
-                      border: '2px dashed var(--border-ultra-thin)', 
-                      borderRadius: '12px', 
-                      padding: '40px', 
-                      textAlign: 'center',
-                      background: 'rgba(0,0,0,0.2)',
-                      cursor: 'pointer',
-                      position: 'relative'
-                    }} onClick={() => document.getElementById('image-upload').click()}>
-                      <Upload size={32} style={{ color: 'var(--accent-magenta)', marginBottom: '12px' }} />
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                        {imageFile ? <span style={{ color: 'var(--accent-cyan)' }}>已选择: {imageFile.name}</span> : '点击或拖拽图片到此处上传'}
-                      </p>
-                      <input 
-                        id="image-upload" 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={(e) => setImageFile(e.target.files[0])} 
-                        style={{ display: 'none' }} 
-                      />
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase' }}>上传效果图（支持多张）</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {imageUploads.map((item) => (
+                        <div key={item.id} className="cyber-card" style={{ padding: '12px', display: 'flex', gap: '12px', alignItems: 'center', background: 'rgba(0,0,0,0.3)' }}>
+                          <img src={item.url} style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px' }} alt="Preview" />
+                          <div style={{ flex: 1 }}>
+                            <input 
+                              type="text" 
+                              placeholder="添加图片注释..." 
+                              value={item.caption} 
+                              onChange={(e) => updateCaption(item.id, e.target.value)}
+                              style={{ padding: '6px 10px', fontSize: '0.85rem' }}
+                            />
+                          </div>
+                          <button type="button" onClick={() => removeImage(item.id)} style={{ background: 'none', color: '#ef4444' }}><X size={16} /></button>
+                        </div>
+                      ))}
+                      
+                      <div style={{ 
+                        border: '2px dashed var(--border-ultra-thin)', 
+                        borderRadius: '12px', 
+                        padding: '20px', 
+                        textAlign: 'center',
+                        background: 'rgba(0,0,0,0.2)',
+                        cursor: 'pointer'
+                      }} onClick={() => document.getElementById('image-upload').click()}>
+                        <Plus size={24} style={{ color: 'var(--accent-magenta)', marginBottom: '4px' }} />
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>添加图片</p>
+                        <input 
+                          id="image-upload" 
+                          type="file" 
+                          accept="image/*" 
+                          multiple
+                          onChange={handleImageChange} 
+                          style={{ display: 'none' }} 
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -573,7 +631,7 @@ const AdminDashboard = ({ session }) => {
                     style={{ padding: 0, display: 'flex', overflow: 'hidden' }}
                   >
                     <div style={{ width: '120px', height: '120px', flexShrink: 0 }}>
-                      <img src={s.image_url} alt={s.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={s.images?.[0]?.url || s.image_url} alt={s.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                     <div style={{ padding: '20px', flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ overflow: 'hidden' }}>
