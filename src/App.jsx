@@ -18,6 +18,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react'
 import ShowcaseView from './components/ShowcaseView'
+import ShowcaseCard from './components/ShowcaseCard'
 import './index.css'
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
   const [favorites, setFavorites] = useState([]) // Array of prompt IDs
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const [isSearchFocused, setIsSearchFocused] = useState(false)
+  const [featuredShowcases, setFeaturedShowcases] = useState([])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -52,6 +54,7 @@ function App() {
     })
 
     fetchPublicPrompts()
+    fetchFeaturedShowcases()
 
     return () => subscription.unsubscribe()
   }, [currentView])
@@ -71,6 +74,20 @@ function App() {
       console.error('Error fetching prompts:', error.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchFeaturedShowcases = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('showcases')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3);
+      if (error) throw error;
+      setFeaturedShowcases(data || []);
+    } catch (error) {
+      console.error('Error fetching featured showcases:', error.message);
     }
   }
 
@@ -155,7 +172,7 @@ function App() {
               }}
             >
               <ImageIcon size={16} />
-              案例
+              案例库
             </button>
             <button 
               onClick={() => { setCurrentView('public'); setShowFavoritesOnly(false); }} 
@@ -235,6 +252,35 @@ function App() {
                   为未来而构建。探索、组织并瞬间激发您的 AI 创作灵感。
                 </p>
               </header>
+
+              {/* Featured Showcases Teaser */}
+              <div style={{ marginBottom: '80px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <h2 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <ImageIcon className="neon-text-magenta" size={24} /> 精选案例库
+                  </h2>
+                  <button 
+                    onClick={() => setCurrentView('showcase')} 
+                    className="link-text" 
+                    style={{ 
+                      fontSize: '0.9rem', color: 'var(--accent-cyan)', background: 'none', border: 'none', 
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' 
+                    }}
+                  >
+                    查看完整案例库 <ChevronRight size={16} />
+                  </button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                  {featuredShowcases.map((s, idx) => (
+                    <ShowcaseCard key={s.id} showcase={s} index={idx} />
+                  ))}
+                  {featuredShowcases.length === 0 && !loading && (
+                    <div className="cyber-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', gridColumn: '1/-1' }}>
+                      暂无精选案例，快去创作后台上传您的第一个案例吧
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* Modern Search Row */}
               <div style={{ position: 'relative', marginBottom: '48px' }}>
