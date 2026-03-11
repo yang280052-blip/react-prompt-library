@@ -14,8 +14,10 @@ import {
   Settings, 
   LogOut,
   ChevronRight,
-  Filter
+  Filter,
+  Image as ImageIcon
 } from 'lucide-react'
+import ShowcaseView from './components/ShowcaseView'
 import './index.css'
 
 function App() {
@@ -143,6 +145,18 @@ function App() {
           </motion.div>
           
           <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+            <button 
+              onClick={() => { setCurrentView('showcase'); setShowFavoritesOnly(false); }} 
+              style={{ 
+                background: 'none', border: 'none', 
+                color: currentView === 'showcase' ? 'var(--accent-magenta)' : 'var(--text-muted)', 
+                fontWeight: '600', fontSize: '0.9rem',
+                display: 'flex', alignItems: 'center', gap: '6px'
+              }}
+            >
+              <ImageIcon size={16} />
+              案例
+            </button>
             <button 
               onClick={() => { setCurrentView('public'); setShowFavoritesOnly(false); }} 
               style={{ 
@@ -373,6 +387,11 @@ function App() {
                 </motion.div>
               )}
             </motion.div>
+          )}
+          
+          {/* SHOWCASE VIEW */}
+          {currentView === 'showcase' && (
+            <ShowcaseView />
           )}
 
           {/* AUTH VIEW */}
