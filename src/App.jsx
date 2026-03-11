@@ -257,7 +257,7 @@ function App() {
               <div style={{ marginBottom: '80px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                   <h2 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <ImageIcon className="neon-text-magenta" size={24} /> 精选案例库
+                    <ImageIcon className="neon-text-magenta" size={24} /> 案例库
                   </h2>
                   <button 
                     onClick={() => setCurrentView('showcase')} 
