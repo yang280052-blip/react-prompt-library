@@ -628,22 +628,48 @@ const AdminDashboard = ({ session }) => {
                     layout
                     key={s.id} 
                     className="cyber-card" 
-                    style={{ padding: 0, display: 'flex', overflow: 'hidden' }}
+                    style={{ padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
                   >
-                    <div style={{ width: '120px', height: '120px', flexShrink: 0 }}>
-                      <img src={s.images?.[0]?.url || s.image_url} alt={s.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </div>
-                    <div style={{ padding: '20px', flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ overflow: 'hidden' }}>
+                    <div style={{ display: 'flex' }}>
+                      <div style={{ width: '120px', height: '120px', flexShrink: 0 }}>
+                        <img src={s.images?.[0]?.url || s.image_url} alt={s.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                      <div style={{ padding: '16px 20px', flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                         <h4 style={{ fontSize: '1.1rem', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</h4>
                         <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {s.prompt_content}
                         </p>
                       </div>
-                      <div style={{ display: 'flex', gap: '12px', marginLeft: '20px' }}>
-                        <button onClick={() => editShowcase(s)} style={{ background: 'none', color: 'var(--text-main)' }}><Edit3 size={18} /></button>
-                        <button onClick={() => deleteShowcase(s.id, s.user_id)} style={{ background: 'none', color: '#ef4444' }}><Trash2 size={18} /></button>
-                      </div>
+                    </div>
+                    {/* Action Bar - always visible */}
+                    <div style={{ 
+                      display: 'flex', justifyContent: 'flex-end', gap: '8px', 
+                      padding: '10px 16px', 
+                      borderTop: '1px solid var(--border-ultra-thin)',
+                      background: 'rgba(255,255,255,0.02)'
+                    }}>
+                      <button 
+                        onClick={() => editShowcase(s)} 
+                        style={{ 
+                          background: 'rgba(6, 182, 212, 0.1)', color: 'var(--accent-cyan)', 
+                          padding: '6px 14px', borderRadius: '6px', fontSize: '0.8rem',
+                          display: 'flex', alignItems: 'center', gap: '6px',
+                          border: '1px solid rgba(6, 182, 212, 0.2)'
+                        }}
+                      >
+                        <Edit3 size={14} /> 编辑
+                      </button>
+                      <button 
+                        onClick={() => deleteShowcase(s.id, s.user_id)} 
+                        style={{ 
+                          background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', 
+                          padding: '6px 14px', borderRadius: '6px', fontSize: '0.8rem',
+                          display: 'flex', alignItems: 'center', gap: '6px',
+                          border: '1px solid rgba(239, 68, 68, 0.2)'
+                        }}
+                      >
+                        <Trash2 size={14} /> 删除
+                      </button>
                     </div>
                   </motion.div>
                 ))
