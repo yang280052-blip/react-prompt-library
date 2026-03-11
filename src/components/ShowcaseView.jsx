@@ -59,8 +59,7 @@ const ShowcaseView = () => {
           <Sparkles size={14} /> 案例库
         </motion.div>
         <h1 style={{ fontSize: '4.5rem', lineHeight: '0.95', marginBottom: '24px' }}>
-          提示词 <br />
-          <span className="gradient-text-modern">视觉创作方案</span>
+          <span className="gradient-text-modern">案例库</span>
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '1.25rem', lineHeight: '1.6' }}>
           探索最具创意的提示词实战案例。一张图片，一个指令，开启无限可能。
