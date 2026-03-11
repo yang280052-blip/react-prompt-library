@@ -1,0 +1,50 @@
+[
+    {
+        "id": 1,
+        "title": "角色克隆模板",
+        "category": "人设多视图",
+        "category2": "Nanobanana",
+        "desc": "基于参考图创建专业角色参考表，适用于已有角色图的定妆照或3D建模参考",
+        "content": "Create a professional character reference sheet based strictly on the uploaded reference image. Use a clean, neutral plain background and present the sheet as a technical model turnaround while matching the exact visual style of the reference. Arrange the composition into two horizontal rows. Top row: four full-body standing views placed side-by-side: front view, left profile view, right profile view, back view. Bottom row: three highly detailed close-up portraits: front portrait, left profile portrait, right profile portrait. Maintain perfect identity consistency, relaxed A-pose, and consistent head height. Output a crisp, print-ready reference sheet with sharp details."
+    },
+    {
+        "id": 2,
+        "title": "角色原创模板",
+        "category": "人设多视图",
+        "category2": "Nanobanana",
+        "desc": "【内容可替换或删除】从零开始设计新角色，基于文字描述生成专业角色参考表",
+        "content": "Create a professional character reference sheet of [a futuristic tech explorer, female, wearing a matte white carbon fiber exosuit, short neon blue bob haircut, glowing orange tactical goggles]. Use a clean, neutral plain background and present the sheet as a technical model turnaround in a photographic style. Arrange the composition into two horizontal rows. Top row: four full-body standing views: front view, left profile view, right profile view, back view. Bottom row: three highly detailed close-up portraits: front portrait, left profile portrait, right profile portrait. Maintain perfect identity consistency, accurate anatomy, and consistent facial scale. Lighting should be natural and controlled. Output a crisp, print-ready reference sheet."
+    },
+    {
+        "id": 3,
+        "title": "智能换装模板",
+        "category": "换装",
+        "category2": "Nanobanana",
+        "desc": "保持角色特征不变，仅更换服装造型，适用于角色多造型展示",
+        "content": "Keep the same character sheet layout. Keep the physical characteristics, facial features, and expression exactly the same as the previous reference. Change the outfit to [a traditional crimson Hanfu with intricate gold phoenix embroidery and flowing silk sleeves]. Ensure the new clothing maintains the same technical turnaround perspective and lighting consistency across all panels."
+    },
+    {
+        "id": 4,
+        "title": "2x2 镜头组生成提示词",
+        "category": "分镜头图",
+        "category2": "Nanobanana",
+        "desc": "用于在一张图中同时生成四个连续动作或不同角度的镜头，成功率高达95%",
+        "content": "Generate a photorealistic cinematic 2x2 grid of still frames from a live-action [Insert Film/Series Title], depicting [Insert Scene Description].\n\nThe imagery must feel grounded, brutal, and physically real. No animation style, no painterly rendering, no exaggerated fantasy glow. Real weight, real violence, real consequences.\n\nRemember to use @char1 as a reference for what [Character Name] looks like and @img1 for what the [Environment/Creature] looks like.\n\nEach frame represents a different angle or distance from the same sequence of action, capturing fragments of the moment where [Describe Action Sequence, e.g., Character jumps, strikes, and lands].\n\n⸻\nSCENE & ENVIRONMENT: (Add details here)\n⸻\nCHARACTERS: (Add details here)\n⸻\nACTION & CONTINUITY: (Add details here)\n⸻\nCAMERA & COMPOSITION: (Add details here)\n⸻\nLIGHTING & ATMOSPHERE: (Add details here)\n⸻\nTONE & FINISH: (Add details here)"
+    },
+    {
+        "id": 5,
+        "title": "电影级画质增强提示词",
+        "category": "质量",
+        "category2": "Nanobanana",
+        "desc": "从2x2网格裁切出单张图片后，使用高端放大工具进行高精细化增强",
+        "content": "Preserve the exact composition, framing, camera angle, color grade and subject placement — do not alter or add new elements.\n\nIncrease resolution to true high-end cinematic clarity, with natural film-grade sharpness (no AI oversharpening).\n\nApply blockbuster–style cinematography:\n– Grounded realism\n– Soft, motivated lighting\n– Natural contrast\n– Restrained highlights\n– Deep but clean shadows\n– Subtle atmospheric depth\n– Keep the same color temperature and color tone\n\nTexture pass should feel physically real: skin pores, fabric weave, dust, stone, metal, wood — all enhanced without plastic smoothing.\n\nMaintain cinematic depth of field consistent with the original image (natural lens falloff, no artificial blur).\n\nDo not redraw. Do not stylize. Do not beautify. Only enhance realism and resolution."
+    },
+    {
+        "id": 6,
+        "title": "即梦人物三视图",
+        "category": "人设多视图",
+        "category2": "即梦",
+        "desc": "【内容可替换或删除】一体化角色参考表，左侧正面半身特写，右侧正侧背三视图",
+        "content": "优秀人设设计师，专业标准人设出图。生成一张完整的一体化角色参考表（Character Reference Sheet）。必须将以下四个视角整合在同一个画面内，清晰有序地排列：左侧是一个精致的正面半身特写；右侧是完全展示的、从头到脚的人物全身正、侧、背三视图。强制要求：右侧三视图中的全身像必须保持头部和脚部完全在画面内，严禁裁剪，确保角色双脚着地完整呈现，从头顶到脚底清晰可见。所有视角保持完美的身份一致性。背景纯白（Pure white background），无阴影。人物比例修长，九头身，头小。【角色描述：一位清冷孤傲的仙侠女剑客，身穿白蓝相间的流光云纹长裙，轻盈的丝绸飘带随风舞动，长发飘逸，佩戴精致的白玉头饰，神情淡漠。】"
+    }
+]
