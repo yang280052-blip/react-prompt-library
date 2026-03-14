@@ -3,48 +3,33 @@ import { supabase } from './supabaseClient'
 import PromptCard from './components/PromptCard'
 import AdminDashboard from './components/AdminDashboard'
 import Auth from './components/Auth'
+import CategoryNav from './components/CategoryNav'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Search, 
-  LayoutGrid, 
-  Heart, 
-  User, 
-  Sparkles, 
-  LogIn, 
-  Settings, 
-  LogOut,
-  ChevronRight,
-  Filter,
-  Image as ImageIcon
-} from 'lucide-react'
+import { Search, Heart, Sparkles, LogIn, Settings, Image as ImageIcon } from 'lucide-react'
 import ShowcaseView from './components/ShowcaseView'
-import ShowcaseCard from './components/ShowcaseCard'
 import './index.css'
 
 function App() {
   const [session, setSession] = useState(null)
-  const [currentView, setCurrentView] = useState('public') // 'public' | 'admin' | 'auth'
+  const [currentView, setCurrentView] = useState('public')
   const [prompts, setPrompts] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeCategory, setActiveCategory] = useState('All')
-  const [favorites, setFavorites] = useState([]) // Array of prompt IDs
+  const [activeZone, setActiveZone] = useState('all')
+  const [favorites, setFavorites] = useState([])
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const [isSearchFocused, setIsSearchFocused] = useState(false)
-  const [featuredShowcases, setFeaturedShowcases] = useState([])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
-      if (session) fetchFavorites(session.user.id);
+      if (session) fetchFavorites(session.user.id)
     })
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       if (session) {
-        fetchFavorites(session.user.id);
+        fetchFavorites(session.user.id)
         if (currentView === 'auth') setCurrentView('admin')
       } else {
         setFavorites([])
@@ -54,8 +39,6 @@ function App() {
     })
 
     fetchPublicPrompts()
-    fetchFeaturedShowcases()
-
     return () => subscription.unsubscribe()
   }, [currentView])
 
@@ -63,11 +46,7 @@ function App() {
     setLoading(true)
     try {
       const { data, error } = await supabase
-        .from('prompts')
-        .select('*')
-        .eq('is_public', true)
-        .order('created_at', { ascending: false })
-      
+        .from('prompts').select('*').eq('is_public', true).order('created_at', { ascending: false })
       if (error) throw error
       setPrompts(data || [])
     } catch (error) {
@@ -77,137 +56,83 @@ function App() {
     }
   }
 
-  const fetchFeaturedShowcases = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('showcases')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(3);
-      if (error) throw error;
-      setFeaturedShowcases(data || []);
-    } catch (error) {
-      console.error('Error fetching featured showcases:', error.message);
-    }
-  }
-
   const fetchFavorites = async (userId) => {
     try {
-      const { data, error } = await supabase
-        .from('favorites')
-        .select('prompt_id')
-        .eq('user_id', userId)
-      
-      if (error) throw error;
-      setFavorites(data.map(f => f.prompt_id));
+      const { data, error } = await supabase.from('favorites').select('prompt_id').eq('user_id', userId)
+      if (error) throw error
+      setFavorites(data.map(f => f.prompt_id))
     } catch (error) {
-      console.error('Error fetching favorites:', error.message);
+      console.error('Error fetching favorites:', error.message)
     }
   }
 
   const handleFavoriteToggle = (promptId, isNowFavorited) => {
-    if (isNowFavorited) {
-      setFavorites(prev => [...prev, promptId]);
-    } else {
-      setFavorites(prev => prev.filter(id => id !== promptId));
-    }
+    if (isNowFavorited) setFavorites(prev => [...prev, promptId])
+    else setFavorites(prev => prev.filter(id => id !== promptId))
   }
 
-  const navigateToAdmin = () => {
-    if (session) {
-      setCurrentView('admin')
-    } else {
-      setCurrentView('auth')
-    }
-  }
+  const navigateToAdmin = () => setCurrentView(session ? 'admin' : 'auth')
 
-  // Filter logic
-  const categories = ['All', ...new Set(prompts.map(p => p.category))]
-  
+  // Filter logic — zone replaces category, 'all' shows everything
   const filteredPrompts = prompts.filter(p => {
-    const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           p.content.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = activeCategory === 'All' || p.category === activeCategory
-    const matchesFavorite = showFavoritesOnly ? favorites.includes(p.id) : true;
-    return matchesSearch && matchesCategory && matchesFavorite
+    const matchesZone = activeZone === 'all' || p.category === activeZone
+    const matchesFavorite = showFavoritesOnly ? favorites.includes(p.id) : true
+    return matchesSearch && matchesZone && matchesFavorite
   })
+
+  // Search suggestions (all zones)
+  const searchSuggestions = searchQuery.length > 0
+    ? prompts.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          p.content.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 6)
+    : []
 
   return (
     <div className="app-container">
-      {/* Sleek Navbar */}
-      <nav style={{ 
-        position: 'sticky', 
-        top: 0, 
-        zIndex: 100, 
-        background: 'rgba(10, 10, 12, 0.7)', 
-        backdropFilter: 'blur(20px)',
+      {/* Navbar */}
+      <nav style={{
+        position: 'sticky', top: 0, zIndex: 100,
+        background: 'rgba(10, 10, 12, 0.75)', backdropFilter: 'blur(20px)',
         borderBottom: '1px solid var(--border-ultra-thin)'
       }}>
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px' }}>
-          <motion.div 
+          <motion.div
             whileHover={{ scale: 1.02 }}
             style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }}
-            onClick={() => setCurrentView('public')}
+            onClick={() => { setCurrentView('public'); setShowFavoritesOnly(false); }}
           >
-            <div style={{ 
-              width: '36px', height: '36px', borderRadius: '10px', 
-              background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-magenta))',
-              display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#000'
-            }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-magenta))', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#000' }}>
               <Sparkles size={20} strokeWidth={2.5} />
             </div>
-            <h1 style={{ fontSize: '1.25rem', margin: 0 }} className="gradient-text-modern">
-              PROMPT LIB
-            </h1>
+            <h1 style={{ fontSize: '1.2rem', margin: 0 }} className="gradient-text-modern">PROMPT LIB</h1>
           </motion.div>
-          
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-            <button 
-              onClick={() => { setCurrentView('showcase'); setShowFavoritesOnly(false); }} 
-              style={{ 
-                background: 'none', border: 'none', 
-                color: currentView === 'showcase' ? 'var(--accent-magenta)' : 'var(--text-muted)', 
-                fontWeight: '600', fontSize: '0.9rem',
-                display: 'flex', alignItems: 'center', gap: '6px'
-              }}
+
+          <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+            <button
+              onClick={() => { setCurrentView('showcase'); setShowFavoritesOnly(false); }}
+              style={{ background: 'none', border: 'none', color: currentView === 'showcase' ? 'var(--accent-magenta)' : 'var(--text-muted)', fontWeight: '600', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              <ImageIcon size={16} />
-              案例库
+              <ImageIcon size={16} /> 案例库
             </button>
-            <button 
-              onClick={() => { setCurrentView('public'); setShowFavoritesOnly(false); }} 
-              style={{ 
-                background: 'none', border: 'none', 
-                color: currentView === 'public' && !showFavoritesOnly ? '#fff' : 'var(--text-muted)', 
-                fontWeight: '600', fontSize: '0.9rem',
-                display: 'flex', alignItems: 'center', gap: '6px'
-              }}
+            <button
+              onClick={() => { setCurrentView('public'); setShowFavoritesOnly(false); setActiveZone('all'); }}
+              style={{ background: 'none', border: 'none', color: currentView === 'public' && !showFavoritesOnly ? '#fff' : 'var(--text-muted)', fontWeight: '600', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              <LayoutGrid size={16} />
-              探索
+              提示词库
             </button>
             {session && (
-              <button 
-                onClick={() => { setCurrentView('public'); setShowFavoritesOnly(true); }} 
-                style={{ 
-                  background: 'none', border: 'none', 
-                  color: showFavoritesOnly ? 'var(--accent-magenta)' : 'var(--text-muted)', 
-                  display: 'flex', alignItems: 'center', gap: '6px', 
-                  fontWeight: '600', fontSize: '0.9rem'
-                }}
+              <button
+                onClick={() => { setCurrentView('public'); setShowFavoritesOnly(true); }}
+                style={{ background: 'none', border: 'none', color: showFavoritesOnly ? 'var(--accent-magenta)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600', fontSize: '0.9rem' }}
               >
-                <Heart size={16} fill={showFavoritesOnly ? "var(--accent-magenta)" : "none"} />
-                收藏
+                <Heart size={16} fill={showFavoritesOnly ? 'var(--accent-magenta)' : 'none'} /> 收藏
               </button>
             )}
-            <button 
+            <button
               onClick={navigateToAdmin}
               className="btn-cyber-outline"
-              style={{ 
-                display: 'flex', alignItems: 'center', gap: '8px', 
-                padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem',
-                borderColor: currentView === 'admin' ? 'var(--accent-cyan)' : 'var(--border-ultra-thin)'
-              }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', borderColor: currentView === 'admin' ? 'var(--accent-cyan)' : 'var(--border-ultra-thin)' }}
             >
               {session ? <Settings size={16} /> : <LogIn size={16} />}
               {session ? '控制台' : '登录'}
@@ -216,31 +141,21 @@ function App() {
         </div>
       </nav>
 
-      {/* Main Content Area */}
       <main className="container app-main">
-        
         <AnimatePresence mode="wait">
-          {/* PUBLIC VIEW */}
+
+          {/* ── 提示词库 PUBLIC VIEW ── */}
           {currentView === 'public' && (
-            <motion.div 
+            <motion.div
               key="public-view"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
             >
-              <header style={{ textAlign: 'left', marginBottom: '64px', maxWidth: '800px' }}>
+              {/* Hero Header */}
+              <header style={{ textAlign: 'left', marginBottom: '56px', maxWidth: '760px' }}>
                 <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 }}
-                  style={{ 
-                    display: 'inline-flex', alignItems: 'center', gap: '8px', 
-                    padding: '6px 12px', background: 'rgba(6, 182, 212, 0.1)', 
-                    color: 'var(--accent-cyan)', borderRadius: '6px', fontSize: '0.75rem', 
-                    fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em',
-                    marginBottom: '16px'
-                  }}
+                  initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: 'rgba(6,182,212,0.1)', color: 'var(--accent-cyan)', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '16px' }}
                 >
                   <Sparkles size={14} /> 发现潜能
                 </motion.div>
@@ -248,211 +163,99 @@ function App() {
                   极致高效的 <br />
                   <span className="gradient-text-modern">PROMPT 管理系统</span>
                 </h1>
-                <p style={{ color: 'var(--text-muted)', fontSize: '1.25rem', lineHeight: '1.6' }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '1.15rem', lineHeight: '1.6' }}>
                   为未来而构建。探索、组织并瞬间激发您的 AI 创作灵感。
                 </p>
               </header>
 
-              {/* Featured Showcases Teaser */}
-              <div style={{ marginBottom: '80px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                  <h2 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <ImageIcon className="neon-text-magenta" size={24} /> 案例库
-                  </h2>
-                  <button 
-                    onClick={() => setCurrentView('showcase')} 
-                    className="link-text" 
-                    style={{ 
-                      fontSize: '0.9rem', color: 'var(--accent-cyan)', background: 'none', border: 'none', 
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' 
-                    }}
-                  >
-                    查看完整案例库 <ChevronRight size={16} />
-                  </button>
-                </div>
-                <div className="showcase-teaser-grid">
-                  {featuredShowcases.map((s, idx) => (
-                    <ShowcaseCard key={s.id} showcase={s} index={idx} />
-                  ))}
-                  {featuredShowcases.length === 0 && !loading && (
-                    <div className="cyber-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', gridColumn: '1/-1' }}>
-                      暂无精选案例，快去创作后台上传您的第一个案例吧
-                    </div>
-                  )}
-                </div>
-              </div>
+              {/* Search + CategoryNav */}
+              <div style={{ marginBottom: '40px' }}>
+                {/* Search */}
+                <div style={{ position: 'relative', marginBottom: '16px' }}>
+                  <Search size={20} style={{ position: 'absolute', left: '16px', top: '17px', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+                  <input
+                    type="text"
+                    placeholder="快速搜索提示词..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    onFocus={() => setIsSearchFocused(true)}
+                    style={{ paddingLeft: '52px', background: 'var(--card-bg)', height: '54px', width: '100%' }}
+                  />
 
-              {/* Modern Search Row */}
-              <div style={{ position: 'relative', marginBottom: '48px' }}>
-                <div className="search-filter-row">
-                  <div style={{ flex: 1, position: 'relative' }}>
-                    <Search size={20} style={{ position: 'absolute', left: '16px', top: '16px', color: 'var(--text-muted)' }} />
-                    <input 
-                      type="text" 
-                      placeholder="快速搜索提示词..." 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onFocus={() => setIsSearchFocused(true)}
-                      style={{ paddingLeft: '52px', background: 'var(--card-bg)', height: '54px' }}
-                    />
-                  </div>
-                  
-                  <div className="filter-pills">
-                    <div style={{ padding: '0 8px', color: 'var(--text-muted)' }}><Filter size={16} /></div>
-                    {categories.map(cat => (
-                      <button 
-                        key={cat}
-                        onClick={() => setActiveCategory(cat)}
-                        style={{ 
-                          padding: '8px 16px', 
-                          borderRadius: '8px',
-                          background: activeCategory === cat ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                          color: activeCategory === cat ? '#fff' : 'var(--text-muted)',
-                          fontSize: '0.85rem',
-                          whiteSpace: 'nowrap',
-                          fontWeight: activeCategory === cat ? '700' : '500'
-                        }}
+                  {/* HUD Dropdown */}
+                  <AnimatePresence>
+                    {isSearchFocused && searchQuery.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                        className="hud-dropdown"
+                        style={{ position: 'absolute', left: 0, right: 0, top: '100%', zIndex: 200 }}
                       >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
+                        <div className="hud-section-label">匹配的提示词</div>
+                        <div style={{ maxHeight: '280px', overflowY: 'auto' }}>
+                          {searchSuggestions.length > 0 ? searchSuggestions.map(p => (
+                            <div key={p.id} className="hud-item" onClick={() => { setSearchQuery(p.title); setIsSearchFocused(false); }}>
+                              <Sparkles size={14} className="neon-text-cyan" />
+                              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</span>
+                              <span className="hud-tag">{p.category}</span>
+                            </div>
+                          )) : (
+                            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>未找到相关提示词</div>
+                          )}
+                        </div>
+                        <div style={{ position: 'fixed', inset: 0, zIndex: -1 }} onClick={() => setIsSearchFocused(false)} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
-                {/* HUD Search Suggestions */}
-                <AnimatePresence>
-                  {isSearchFocused && searchQuery.length > 0 && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                      className="hud-dropdown"
-                      style={{ position: 'absolute', left: 0, right: 0, top: '100%' }}
-                    >
-                      <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '8px' }}>
-                        {/* Prompt Suggestions */}
-                        <div>
-                          <div className="hud-section-label">匹配的提示词</div>
-                          <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                            {filteredPrompts.slice(0, 6).map(p => (
-                              <div 
-                                key={p.id} 
-                                className="hud-item"
-                                onClick={() => {
-                                  setSearchQuery(p.title);
-                                  setIsSearchFocused(false);
-                                }}
-                              >
-                                <Sparkles size={14} className="neon-text-cyan" />
-                                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</span>
-                                <span className="hud-tag">{p.category}</span>
-                              </div>
-                            ))}
-                            {filteredPrompts.length === 0 && (
-                              <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                未找到搜索建议
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Category Suggestions */}
-                        <div style={{ borderLeft: '1px solid var(--border-ultra-thin)' }}>
-                          <div className="hud-section-label">快速分类检索</div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '0 8px' }}>
-                            {categories.filter(c => c !== 'All' && c.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 8).map(cat => (
-                              <div 
-                                key={cat} 
-                                className="hud-item"
-                                onClick={() => {
-                                  setActiveCategory(cat);
-                                  setSearchQuery('');
-                                  setIsSearchFocused(false);
-                                }}
-                              >
-                                <Filter size={14} className="neon-text-magenta" />
-                                <span>{cat}</span>
-                              </div>
-                            ))}
-                            {categories.filter(c => c !== 'All' && c.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
-                              <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                无匹配分类
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Click outside to close helper */}
-                      <div 
-                        style={{ position: 'fixed', inset: 0, zIndex: -1 }} 
-                        onClick={(e) => { e.stopPropagation(); setIsSearchFocused(false); }} 
-                      />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {/* Zone Nav */}
+                <CategoryNav activeZone={activeZone} onZoneChange={zone => { setActiveZone(zone); setShowFavoritesOnly(false); }} />
               </div>
 
               {/* Results Grid */}
               {loading ? (
                 <div style={{ textAlign: 'center', padding: '100px 0' }}>
-                  <motion.div 
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                    style={{ width: '40px', height: '40px', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: 'var(--accent-cyan)', borderRadius: '50%', margin: '0 auto' }}
-                  />
+                  <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                    style={{ width: '40px', height: '40px', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: 'var(--accent-cyan)', borderRadius: '50%', margin: '0 auto' }} />
                 </div>
               ) : filteredPrompts.length === 0 ? (
-                <div className="cyber-card" style={{ textAlign: 'center', padding: '100px', color: 'var(--text-muted)' }}>
+                <div className="cyber-card" style={{ textAlign: 'center', padding: '80px', color: 'var(--text-muted)' }}>
                   没有找到相关的提示词
                 </div>
               ) : (
                 <motion.div layout className="prompt-grid">
                   {filteredPrompts.map((prompt, index) => (
-                    <PromptCard 
-                      key={prompt.id} 
-                      prompt={prompt} 
-                      session={session}
+                    <PromptCard
+                      key={prompt.id} prompt={prompt} session={session}
                       isFavorited={favorites.includes(prompt.id)}
-                      onFavoriteToggle={handleFavoriteToggle}
-                      index={index}
+                      onFavoriteToggle={handleFavoriteToggle} index={index}
                     />
                   ))}
                 </motion.div>
               )}
             </motion.div>
           )}
-          
-          {/* SHOWCASE VIEW */}
-          {currentView === 'showcase' && (
-            <ShowcaseView />
-          )}
 
-          {/* AUTH VIEW */}
+          {/* ── 案例库 VIEW ── */}
+          {currentView === 'showcase' && <ShowcaseView key="showcase-view" />}
+
+          {/* ── AUTH VIEW ── */}
           {currentView === 'auth' && (
-            <motion.div 
-              key="auth-view"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-            >
+            <motion.div key="auth-view" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}>
               <Auth onLogin={() => setCurrentView('admin')} />
             </motion.div>
           )}
 
-          {/* ADMIN VIEW */}
+          {/* ── ADMIN VIEW ── */}
           {currentView === 'admin' && session && (
-            <motion.div 
-              key="admin-view"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
+            <motion.div key="admin-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <AdminDashboard session={session} />
             </motion.div>
           )}
-        </AnimatePresence>
 
+        </AnimatePresence>
       </main>
     </div>
   )
