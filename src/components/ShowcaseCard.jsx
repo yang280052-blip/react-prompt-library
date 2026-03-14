@@ -117,6 +117,7 @@ const ShowcaseCard = ({ showcase, index }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            className="modal-overlay"
             style={{
               position: 'fixed', inset: 0,
               backgroundColor: 'rgba(0, 0, 0, 0.9)',
@@ -126,16 +127,11 @@ const ShowcaseCard = ({ showcase, index }) => {
             }}
             onClick={() => setShowModal(false)}
           >
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="cyber-card"
-              style={{
-                width: '100%', maxWidth: '1000px', maxHeight: '90vh',
-                display: 'grid', gridTemplateColumns: '1.2fr 1fr', 
-                position: 'relative', overflow: 'hidden'
-              }}
+              className="cyber-card modal-showcase-layout"
               onClick={(e) => e.stopPropagation()}
             >
               <button 
@@ -151,7 +147,7 @@ const ShowcaseCard = ({ showcase, index }) => {
               </button>
 
               {/* Left Column: Image & Carousel */}
-              <div style={{ height: '100%', background: '#000', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+              <div className="modal-showcase-image">
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', position: 'relative' }}>
                   <img 
                     src={images[currentIdx].url} 
@@ -193,7 +189,7 @@ const ShowcaseCard = ({ showcase, index }) => {
               </div>
 
               {/* Right Column: Prompt Info */}
-              <div style={{ display: 'flex', flexDirection: 'column', padding: '32px', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', padding: '24px', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
                 <h2 style={{ fontSize: '1.75rem', color: '#fff', marginBottom: '8px' }}>{showcase.title}</h2>
                 <div style={{ 
                   color: 'var(--accent-cyan)', fontSize: '0.8rem', fontWeight: 'bold', 
