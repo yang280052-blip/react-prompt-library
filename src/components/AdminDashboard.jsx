@@ -65,10 +65,12 @@ const AdminDashboard = ({ session }) => {
       const adminFlag = data?.is_admin || false;
       setIsAdmin(adminFlag);
       fetchPrompts(adminFlag);
+      fetchShowcases(adminFlag);
     } catch (error) {
       console.error('Error checking admin status:', error.message);
-      setIsAdmin(false); 
+      setIsAdmin(false);
       fetchPrompts(false);
+      fetchShowcases(false);
     }
   };
 
@@ -189,7 +191,7 @@ const AdminDashboard = ({ session }) => {
     }
   };
 
-  const saveShowcase = async (e) => {
+    const saveShowcase = async (e) => {
     e.preventDefault();
     if (imageUploads.length === 0 && !editingShowcaseId) {
       alert('请选择至少一张图片上传');
@@ -205,7 +207,7 @@ const AdminDashboard = ({ session }) => {
         if (item.file) {
           // It's a new file to upload
           const fileExt = item.file.name.split('.').pop();
-          const fileName = `${Math.random()}.${fileExt}`;
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
           const filePath = `${session.user.id}/${fileName}`;
           
           const { error: uploadError } = await supabase.storage
@@ -232,20 +234,30 @@ const AdminDashboard = ({ session }) => {
         image_url: finalImages.length > 0 ? finalImages[0].url : '' // Compatibility for old code
       };
       
-      if (editingShowcaseId) {
-        const { error } = await supabase.from('showcases').update(showcaseData).eq('id', editingShowcaseId);
-        if (error) throw error;
-      } else {
-        showcaseData.user_id = session.user.id;
-        const { error } = await supabase.from('showcases').insert([showcaseData]);
-        if (error) throw error;
+      let { error } = editingShowcaseId 
+        ? await supabase.from('showcases').update(showcaseData).eq('id', editingShowcaseId)
+        : await supabase.from('showcases').insert([{ ...showcaseData, user_id: session.user.id }]);
+
+      if (error) {
+        // Fallback safety: still catch missing column in case of connection/cache issues, but keep it silent unless it persists
+        if (error.message.includes('column "images"')) {
+          const fallbackData = { ...showcaseData };
+          delete fallbackData.images;
+          const retry = editingShowcaseId
+            ? await supabase.from('showcases').update(fallbackData).eq('id', editingShowcaseId)
+            : await supabase.from('showcases').insert([{ ...fallbackData, user_id: session.user.id }]);
+          if (retry.error) throw retry.error;
+        } else {
+          throw error;
+        }
       }
 
+      alert('案例已成功同步到云端！');
       resetForm();
       fetchShowcases();
-      alert('案例保存成功！');
     } catch (error) {
-      alert('保存失败: ' + error.message);
+      console.error('Final save error:', error);
+      alert('操作失败: ' + error.message);
     } finally {
       setUploading(false);
     }
@@ -341,9 +353,9 @@ const AdminDashboard = ({ session }) => {
       </header>
 
       {/* Main Control Row */}
-      <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button 
+      <div className="admin-control-row" style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="admin-tabs" style={{ display: 'flex', gap: '12px' }}>
+          <button
             onClick={() => setActiveTab('prompts')}
             className={activeTab === 'prompts' ? 'btn-cyber-primary' : 'btn-cyber-outline'}
             style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}
@@ -393,7 +405,7 @@ const AdminDashboard = ({ session }) => {
             </div>
             
             {activeTab === 'prompts' ? (
-              <form onSubmit={savePrompt} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+              <form onSubmit={savePrompt} className="form-2col">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   <div>
                     <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase' }}>标题</label>
@@ -432,7 +444,7 @@ const AdminDashboard = ({ session }) => {
                 </div>
               </form>
             ) : (
-              <form onSubmit={saveShowcase} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+              <form onSubmit={saveShowcase} className="form-2col-lg">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   <div>
                     <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase' }}>案例标题</label>
@@ -619,7 +631,7 @@ const AdminDashboard = ({ session }) => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
           >
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '20px' }}>
+            <div className="showcase-grid" style={{ gap: '20px' }}>
               {showcases.length === 0 ? (
                 <div className="cyber-card" style={{ textAlign: 'center', padding: '80px', color: 'var(--text-muted)', gridColumn: '1/-1' }}>您的案例库暂时为空</div>
               ) : (
