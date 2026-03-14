@@ -244,7 +244,7 @@ function App() {
                 >
                   <Sparkles size={14} /> 发现潜能
                 </motion.div>
-                <h1 style={{ fontSize: '4.5rem', lineHeight: '0.95', marginBottom: '24px' }}>
+                <h1 className="hero-title">
                   极致高效的 <br />
                   <span className="gradient-text-modern">PROMPT 管理系统</span>
                 </h1>
@@ -270,7 +270,7 @@ function App() {
                     查看完整案例库 <ChevronRight size={16} />
                   </button>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                <div className="showcase-teaser-grid">
                   {featuredShowcases.map((s, idx) => (
                     <ShowcaseCard key={s.id} showcase={s} index={idx} />
                   ))}
@@ -284,7 +284,7 @@ function App() {
 
               {/* Modern Search Row */}
               <div style={{ position: 'relative', marginBottom: '48px' }}>
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'stretch' }}>
+                <div className="search-filter-row">
                   <div style={{ flex: 1, position: 'relative' }}>
                     <Search size={20} style={{ position: 'absolute', left: '16px', top: '16px', color: 'var(--text-muted)' }} />
                     <input 
@@ -297,12 +297,7 @@ function App() {
                     />
                   </div>
                   
-                  <div style={{ 
-                    display: 'flex', gap: '8px', padding: '6px', 
-                    background: 'var(--card-bg)', borderRadius: '12px', 
-                    border: '1px solid var(--border-ultra-thin)',
-                    alignItems: 'center', overflowX: 'auto', maxWidth: '50%'
-                  }}>
+                  <div className="filter-pills">
                     <div style={{ padding: '0 8px', color: 'var(--text-muted)' }}><Filter size={16} /></div>
                     {categories.map(cat => (
                       <button 
@@ -412,14 +407,7 @@ function App() {
                   没有找到相关的提示词
                 </div>
               ) : (
-                <motion.div 
-                  layout
-                  style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', 
-                    gap: '24px' 
-                  }}
-                >
+                <motion.div layout className="prompt-grid">
                   {filteredPrompts.map((prompt, index) => (
                     <PromptCard 
                       key={prompt.id} 
