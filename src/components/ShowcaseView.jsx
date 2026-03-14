@@ -58,7 +58,7 @@ const ShowcaseView = () => {
         >
           <Sparkles size={14} /> 案例库
         </motion.div>
-        <h1 style={{ fontSize: '4.5rem', lineHeight: '0.95', marginBottom: '24px' }}>
+        <h1 className="hero-title">
           <span className="gradient-text-modern">案例库</span>
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '1.25rem', lineHeight: '1.6' }}>
@@ -95,11 +95,7 @@ const ShowcaseView = () => {
           暂时没有找到相关的案例
         </div>
       ) : (
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
-          gap: '32px' 
-        }}>
+        <div className="showcase-grid">
           {filteredShowcases.map((showcase, index) => (
             <ShowcaseCard 
               key={showcase.id} 
