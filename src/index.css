@@ -328,6 +328,58 @@ button {
   flex-shrink: 0;
 }
 
+/* ===== CATEGORY NAV ===== */
+.category-nav-wrapper {
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  background: var(--card-bg);
+  border-radius: 14px;
+  border: 1px solid var(--border-ultra-thin);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.category-nav-wrapper::-webkit-scrollbar { display: none; }
+
+.category-nav-item {
+  position: relative;
+  padding: 10px 22px;
+  background: none;
+  border: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.category-nav-active-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+}
+
+.category-nav-label {
+  position: relative;
+  z-index: 1;
+}
+
+.category-nav-underline {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+}
+
+/* Zone-colored card border accent */
+.zone-border-人设 { border-top: 3px solid #06b6d4; }
+.zone-border-场景 { border-top: 3px solid #22c55e; }
+.zone-border-风格 { border-top: 3px solid #d946ef; }
+
 /* ===== MOBILE RESPONSIVE ===== */
 @media (max-width: 768px) {
   .container {
