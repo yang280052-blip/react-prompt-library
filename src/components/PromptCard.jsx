@@ -196,6 +196,7 @@ const PromptCard = ({ prompt, session, isFavorited: initialFavorited, onFavorite
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            className="modal-overlay"
             style={{
               position: 'fixed', inset: 0,
               backgroundColor: 'rgba(0, 0, 0, 0.9)',
@@ -212,7 +213,7 @@ const PromptCard = ({ prompt, session, isFavorited: initialFavorited, onFavorite
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className="cyber-card"
               style={{
-                width: '100%', maxWidth: '800px', maxHeight: '90vh',
+                width: '100%', maxWidth: '800px', maxHeight: '92vh',
                 display: 'flex', flexDirection: 'column', position: 'relative'
               }}
               onClick={(e) => e.stopPropagation()}
@@ -243,7 +244,7 @@ const PromptCard = ({ prompt, session, isFavorited: initialFavorited, onFavorite
                 </button>
               </div>
 
-              <div style={{ padding: '32px', overflowY: 'auto', flex: 1 }}>
+              <div style={{ padding: '20px', overflowY: 'auto', flex: 1, WebkitOverflowScrolling: 'touch' }}>
                 <div style={{
                   background: 'rgba(0, 0, 0, 0.3)', border: '1px solid var(--border-ultra-thin)',
                   borderRadius: '12px', padding: '24px', position: 'relative'
