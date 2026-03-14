@@ -252,3 +252,160 @@ button {
   color: var(--accent-magenta);
   text-shadow: 0 0 8px var(--accent-magenta-glow);
 }
+
+/* ===== RESPONSIVE LAYOUT CLASSES ===== */
+.hero-title {
+  font-size: 4.5rem;
+  line-height: 0.95;
+  margin-bottom: 24px;
+}
+
+.prompt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 24px;
+}
+
+.showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 32px;
+}
+
+.showcase-teaser-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.form-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.form-2col-lg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+.modal-showcase-layout {
+  width: 100%;
+  max-width: 1000px;
+  max-height: 90vh;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-showcase-image {
+  height: 100%;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.search-filter-row {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.filter-pills {
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border-ultra-thin);
+  align-items: center;
+  overflow-x: auto;
+  max-width: 50%;
+  flex-shrink: 0;
+}
+
+/* ===== MOBILE RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 14px;
+  }
+
+  .app-main {
+    padding-top: 28px;
+    padding-bottom: 60px;
+  }
+
+  .hero-title {
+    font-size: 2.2rem;
+    line-height: 1.1;
+  }
+
+  .prompt-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .showcase-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .showcase-teaser-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .form-2col,
+  .form-2col-lg {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Showcase modal: stack vertically on mobile */
+  .modal-showcase-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    overflow-y: auto;
+    max-height: 92vh;
+  }
+
+  .modal-showcase-image {
+    height: 240px;
+    min-height: 200px;
+    flex-shrink: 0;
+  }
+
+  .search-filter-row {
+    flex-direction: column;
+  }
+
+  .filter-pills {
+    max-width: 100%;
+  }
+
+  /* Disable hover lift on touch devices */
+  .cyber-card:hover {
+    transform: none;
+    box-shadow: var(--shadow-deep);
+  }
+
+  /* Modal overlay padding */
+  .modal-overlay {
+    padding: 8px !important;
+  }
+
+  /* Admin form */
+  .admin-control-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .admin-tabs {
+    flex-wrap: wrap;
+  }
+}
